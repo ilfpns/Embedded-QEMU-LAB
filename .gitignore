@@ -1,0 +1,22 @@
+# Huge external projects
+busybox/
+buildroot/
+kernel/
+u-boot/
+toolchain/
+
+# Root filesystem
+rootfs/
+rootfs.backup/
+
+# Build outputs
+*.o
+*.elf
+*.bin
+*.img
+*.cpio
+*.uboot
+
+# Temporary files
+*.log
+*.tmp
