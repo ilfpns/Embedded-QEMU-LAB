@@ -1562,3 +1562,168 @@
             클로드를 쓰고 알았지만 x18은 64bits 레지스터이다. 하지만 우리는 32bits를 빌드하고 있다. 즉 myboard_defconfig가 vexpress_common.h을 호출한 파일이기 때문에, 여기에 64bits 관련 설정이 있던 것이다
             
             기존 QEMU 빌드 시 원래는 vexpress를 써서 했다. 하지만 이 포팅 과정으로 인하여 비록 vexpress에서 이름만 바뀌었지만,  myboard를 써서 빌드를 했다
+            
+    - DTS
+        
+        Device Tree는 HW정보를 C코드에서 분리해서 별도 텍스트 파일에 작성한 것이다.
+        예전에 귀찮에 하드코딩헀던 보드의 HW정보를 DTS에 써놓는 것이다.
+        
+        종류
+        
+        - .dts : source로 사람이 작성
+        - .dtb : binary로 커널에 전달
+        - DTS 문법
+            - 항상 첫 줄에 /dts-v1/ 버전을 명세한다
+            - 1, 노드 (Node)
+                
+                ```c
+                이름@주소 {
+                    프로퍼티들;
+                    자식노드들;
+                };
+                
+                // 주소는 선택사항이다, 같은 종류 디바이스가 여러 개일 때 구분용
+                cpu@0 { ... }   ← 0번 CPU
+                cpu@1 { ... }   ← 1번 CPU
+                uart@10009000   ← 주소 0x10009000의 UART
+                ```
+                
+            - 2, 프로퍼티 (Property)
+                
+                `키 = 값;`
+                
+                ```c
+                3가지 값의 종류
+                // 문자열
+                compatible = "arm,cortex-a9";
+                
+                // 32비트 정수 (꺾쇠 괄호)
+                reg = <0x60000000 0x10000000>;
+                interrupts = <0 44 4>;
+                
+                // 값 없음 (존재 자체가 의미)
+                interrupt-controller;
+                ```
+                
+            - 3, reg Property
+                
+                하드웨어 주소와 크기를 정의한다.
+                
+                ```c
+                reg = <시작주소 크기>;
+                
+                // 예시
+                memory@60000000 {
+                    reg = <0x60000000 0x10000000>;
+                    //     ↑시작주소    ↑크기(256MB)
+                };
+                
+                uart@10009000 {
+                    reg = <0x10009000 0x1000>;
+                    //     ↑UART주소   ↑크기(4KB)
+                };
+                ```
+                
+            - 4, compatible Property
+                
+                해당 HW가 특정 드라이버를 사용함을 선언
+                
+                ```c
+                compatible = "arm,cortex-a9";
+                //            ↑벤더  ↑칩 이름
+                
+                compatible = "arm,pl011", "arm,primecell";
+                //            ↑정확한 칩   ↑대체 드라이버 (없으면 이걸 씀)
+                // 앞에서부터 매칭 시도, 없으면 다음 것
+                ```
+                
+            - 5, 라벨 (Label)과 참조(&)
+                
+                ```c
+                gic: interrupt-controller@1e001000 {
+                //↑라벨
+                    ...
+                };
+                
+                timer@100e4000 {
+                    interrupt-parent = <&gic>;
+                    //                  ↑&라벨로 참조
+                };
+                ```
+                
+                - 라벨 : 이름
+                - 참조 : 포인터낌
+            
+            - dts: 특정 보드 전용
+            - dtsi: 여러 보드 공통 사용
+    
+    이제 dts를 써보겠다. 
+    
+    ```c
+    /embedded-linux-qemu-labs/kernel/linux/arch/arm/boot/dts/arm/myboard.dts
+    ```
+    
+    다음 경로로 myboard를 만들겠다. 안에는 AI가 임의로 쓴 코드를 넣었다.
+    
+    ```c
+    cat arch/arm/boot/dts/arm/Makefile | grep vexpress
+    ```
+    
+    이번엔 Makefile의 vexpress를 확인해 보겠다. 이부분을 보면 여러 vexpress~~~.dts파일이 나올 것이다. 
+    
+    여기에 grep -n으로 줄 넘버를 얻고 sed -i를 사용하여 myboard를 등록한다
+    
+    ```c
+    sed -i '28a\\t\tmyboard.dtb \\' arch/arm/boot/dts/arm/Makefile
+    ```
+    
+    - vexpress
+        
+        지금까지 당연하게 쓴 것이었다
+        
+        우리가 뭔가를 쓰려면, 사용하는 것이 무엇인지 알아야 한다.
+        
+        예를들어
+        
+        - QEMU: 가상 실행 환경
+        - busybox: 압축 명령어 박스
+        
+        이런식이다.
+        
+        vexpress는 ARM사에서 만든 개발/검증용 레퍼런스 보드 플랫폼이다. ARM사는 칩 설계 팹리스 회사이다. 여기서 사용할 가상 환경이 필요했고, 많은 CPU를 지원하며, QEMU가 에뮬레이션을 해주는 도구로 vexpress가 있기 때문에, 이를 사용한다
+        
+    
+    | 개념 | 내용 |
+    | --- | --- |
+    | `.dts` vs `.dtb` | 소스(텍스트) vs 바이너리 |
+    | `.dtsi` | 공통 하드웨어 정의, include용 |
+    | `model` | 부팅 로그에 출력되는 보드 이름 |
+    | `compatible` | 드라이버 매칭 기준 |
+    | `reg` | 하드웨어 주소와 크기 |
+    | `#include` | C 전처리기 필요, dtc 단독 불가 |
+    
+    지금까지 개발한 양상을 본다면 대부분 비슷한 방식이다.
+    
+    기존 코드 (스켈레톤) 받아오기 → 내 보드에 맞게 수정 (포팅) → 로직 짜기 → 등록 → ARCH, Cross Compile 설정 → make defconfig → QEMU 빌드
+    
+    ```c
+    // dts 부분 순서
+    기존 코드(스켈레톤) 받아오기
+        ↓
+    ARCH, CROSS_COMPILE 설정  ← 빌드 전에 항상 먼저
+        ↓
+    내 보드에 맞게 수정 (포팅)
+        ├─ defconfig 복사 → TARGET 수정
+        ├─ board/ 디렉토리 생성 → 초기화 코드 수정
+        ├─ Kconfig 작성 → 빌드 시스템에 등록
+        ├─ include/configs/ 헤더 작성
+        └─ DTS 작성 → 하드웨어 정의
+        ↓
+    make defconfig  ← 설정 적용
+        ↓
+    make 빌드
+        ↓
+    file [결과물]  ← ARM인지 검증 (필수)
+        ↓
+    QEMU로 테스트
+    ```
