@@ -1,6 +1,5 @@
 # Huge external projects
 busybox/
-buildroot/
 kernel/
 u-boot/
 toolchain/
