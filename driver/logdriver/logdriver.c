@@ -15,7 +15,19 @@ static const struct file_operations myfops = {
     .open    = myopen,
     .release = myrelease,
 };
-    
+
+static int open(struct inode *inode, struct file *file) {
+
+}
+
+static int release(struct inode *inode, struct file *file) {
+
+}
+
+staitc ssize_t (struct file *file, chat __user *user, size_t size, loff_t *loff) {
+
+}
+
 static int __init mydriver_init(void) {
     dev_t dev;
     alloc_chrdev_region(&dev, 0, 1, DRIVER_NAME);
