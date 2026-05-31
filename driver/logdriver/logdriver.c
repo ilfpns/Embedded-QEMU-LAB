@@ -2,48 +2,21 @@
 #include <linux/fs.h>        // file_operations
 #include <linux/cdev.h>      // cdev 구조체
 #include <linux/uaccess.h>   // copy_to_user, copy_from_user
-
-#define DRIVER_NAME "mydriver"
-#define MSG "Hello from kernel driver!\n"
-
-static int major;            // 디바이스 번호 (커널이 자동 할당)
-static struct cdev my_cdev;  // 캐릭터 디바이스 구조체
-
-static const struct file_operations myfops = {
-    .owner   = THIS_MODULE,
-    .read    = logread,
-    .open    = myopen,
-    .release = myrelease,
-};
-
-static int open(struct inode *inode, struct file *file) {
-
-}
-
-static int release(struct inode *inode, struct file *file) {
-
-}
-
-staitc ssize_t (struct file *file, chat __user *user, size_t size, loff_t *loff) {
-
-}
+#include <linux/init.h>
 
 static int __init mydriver_init(void) {
-    dev_t dev;
-    alloc_chrdev_region(&dev, 0, 1, DRIVER_NAME);
-    major = MAJOR(dev);
-
-    cdev_init(&my_cdev, &myfops);
-    cdev_add(&my_cdev, dev, 1);
-
-    pr_info("major number :  %d\n", major);
+    printk(KERN_INFO "Log, info! \n");
+    printk(KERN_WARNING "Log, warn! \n");
+    printk(KERN_ALERT "Log, alter! \n");
+    printk(KERN_INFO "Log, info! \n");
+    printk(KERN_DEBUG "Log, debug! \n");
     return 0;
 }
 
 static void __exit mydriver_exit(void) {
-    cdev_del(&my_cdev);
-    unregister_chrdev_region(MKDEV(major, 0), 1);
-    pr_alter("log driver unloaded.\n");
+    pr_info("log driver unloaded, info\n");
+    pr_err("log driver unloaded, err\n");
+    pr_emerg("log driver unloaded, emerg\n");
 }
 
 module_init(mydriver_init);

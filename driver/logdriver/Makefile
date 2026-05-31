@@ -2,7 +2,7 @@ KERNEL_DIR ?= /embedded-linux-qemu-labs/kernel/linux
 ARCH := arm
 CROSS_COMPILE := arm-linux-gnueabihf-
 
-obj-m := logdriver.o
+obj-m := mydriver.o
 
 all:
 	make -C $(KERNEL_DIR) \

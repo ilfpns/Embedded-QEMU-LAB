@@ -1,0 +1,1 @@
+savedcmd_logdriver.ko := arm-linux-gnueabihf-ld -r -EL -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /embedded-linux-qemu-labs/kernel/linux/scripts/module.lds -o logdriver.ko logdriver.o logdriver.mod.o .module-common.o
